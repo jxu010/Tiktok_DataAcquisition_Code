@@ -1,0 +1,56 @@
+import twitter,json,csv
+
+CONSUMER_KEY = '2ss7TvBh7VaOYvRYJhNnRWCQO'
+CONSUMER_SECRET = 'rxBNzYDlRrFkI7sm2QS8uPMRGQDyXUC5fBH8iM0rJGmgsK50Gw'
+OAUTH_TOKEN = '1323571406467145728-BxKQMpexjKERoU7ATiixLZVnuXJuzj'
+OAUTH_TOKEN_SECRET = '9UXihP10hVkLdkkFHjyaxJ1y5BOiK0KLRh2wkaid2jnRY'
+
+auth = twitter.oauth.OAuth(OAUTH_TOKEN, OAUTH_TOKEN_SECRET,
+                           CONSUMER_KEY, CONSUMER_SECRET)
+
+twitter_api = twitter.Twitter(auth=auth, retry=True)
+
+# setup a file to write to
+csvfile = open('tiktok_tweets_extended.csv', 'w')
+csvwriter = csv.writer(csvfile, delimiter='|')
+
+#  heres a function that takes out characters that can break
+#  our import into Excel and replaces them with spaces
+#  it also does the unicode bit
+def getVal(val):
+    clean = ""
+    if val:
+        val = val.replace('|', ' ')
+        val = val.replace('\n', ' ')
+        val = val.replace('\r', ' ')
+        clean = val
+    return clean
+
+
+q = "#tikTok" # Comma-separated list of terms can go here
+print ('Filtering the public timeline for track="%s"' % (q,))
+
+twitter_stream = twitter.TwitterStream(auth=twitter_api.auth)
+
+stream = twitter_stream.statuses.filter(track=q)
+
+for tweet in stream:
+
+    if tweet['truncated']:
+        tweet_text = tweet['extended_tweet']['full_text']
+    else:
+        tweet_text = tweet['text']
+    # write the values to file
+    csvwriter.writerow([
+        tweet['id_str'],
+        tweet['created_at'],
+        getVal(tweet['user']['screen_name']),
+        getVal(tweet_text),
+        getVal(tweet['user']['location']),
+        tweet['user']['statuses_count'],
+        tweet['user']['followers_count'],
+        tweet['user']['friends_count'],
+        tweet['user']['created_at']
+        ])
+    # print something to the screen, mostly so we can see what is going on...
+    print (tweet['user']['screen_name'], tweet['text'])
